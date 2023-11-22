@@ -34,16 +34,25 @@ public class ServerHandler {
                 ArrayList<String> cmd = processMessage();
                 switch (cmd.get(0)) {
                     case "all":
-                        manager.toAll(cmd.get(1));
-                        break;
-                    case "nickname":
-                            
+                        if (!manager.toAll(cmd.get(1))) {
+                            out.writeBytes("n\n");
+                        } else {
+                            out.writeBytes("y\n");
+                        }
                         break;
                     case "quit":
-                        
+                        manager.endConnection(); 
                         break;
                     default:
-                        // control nickname
+                        // controllo del username
+                        String nickname = cmd.get(0);
+                        String messsage = cmd.get(1);
+
+                        if (!manager.to(nickname, messsage)) {
+                            out.writeBytes("n\n");
+                        } else {
+                            out.writeBytes("y\n");
+                        }
                         break;
                 }
             }
@@ -57,8 +66,9 @@ public class ServerHandler {
         ArrayList<String> cmd = processMessage();
         if(cmd.get(0).equals("nickname")){
             nickname = cmd.get(1);
+            out.writeBytes("y\n");
         } else {
-            out.writeBytes("Invalid Nickname. Try again\n");
+            out.writeBytes("n\n");
             getNickname();
         }
     }
@@ -76,10 +86,6 @@ public class ServerHandler {
 
         return cmd;
     }
-    
-
-
-
 }
 
 

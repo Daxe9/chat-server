@@ -1,9 +1,7 @@
 package com.example;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.net.Socket;
 
 public class ClientManager {
@@ -15,22 +13,41 @@ public class ClientManager {
         this.nickname = nickname;
     }
 
-    public void toAll(String message) throws IOException {
-        for (Socket socket : all.values()) {
+    public boolean toAll(String message) {
+        try {
+            for (Socket socket : all.values()) {
 
-            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            // <username>,message
-            out.writeBytes(nickname + "," + message + "\n");
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                // <username>,message
+                out.writeBytes(nickname + "," + message + "\n");
 
-            out.close();
+                out.close();
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 
-    public void to(String nickname, String message) throws IOException {
-        Socket user = all.get(nickname);
-        
-        DataOutputStream out = new DataOutputStream(user.getOutputStream());
-        out.writeBytes(this.nickname + "," + message + "\n");
+    public boolean to(String nickname, String message) {
+        try {
+            // controlla se il nickname esiste
+            if (!all.containsKey(nickname)) {
+                return false;
+            }
+            Socket user = all.get(nickname);
+
+            DataOutputStream out = new DataOutputStream(user.getOutputStream());
+            out.writeBytes(this.nickname + "," + message + "\n");
+
+            out.close();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
+    public void endConnection() {
+        all.remove(this.nickname);
+    }
 }
