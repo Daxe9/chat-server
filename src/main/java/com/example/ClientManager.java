@@ -1,6 +1,7 @@
 package com.example;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.io.DataOutputStream;
 import java.net.Socket;
 
@@ -15,13 +16,10 @@ public class ClientManager {
 
     public boolean toAll(String message) {
         try {
-            for (Socket socket : all.values()) {
-
-                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            for (Map.Entry<String, Socket> entry : all.entrySet()) {
+                DataOutputStream out = new DataOutputStream(entry.getValue().getOutputStream());
                 // <username>,message
-                out.writeBytes(nickname + "," + message + "\n");
-
-                out.close();
+                out.writeBytes(this.nickname + "," + message + "\n");
             }
             return true;
         } catch (Exception e) {
@@ -40,7 +38,6 @@ public class ClientManager {
             DataOutputStream out = new DataOutputStream(user.getOutputStream());
             out.writeBytes(this.nickname + "," + message + "\n");
 
-            out.close();
             return true;
         } catch (Exception e) {
             return false;

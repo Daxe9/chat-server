@@ -8,7 +8,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class ServerHandler {
+public class ServerHandler extends Thread {
 
     Socket connection;
     String nickname; 
@@ -22,7 +22,7 @@ public class ServerHandler {
         in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         out = new DataOutputStream(connection.getOutputStream());
         // get nickname
-        getNickname();        
+        getNickname(list);        
         list.put(nickname, connection);
         manager = new ClientManager(list, nickname);
     }
@@ -32,9 +32,14 @@ public class ServerHandler {
         try {
             while(true) {
                 ArrayList<String> cmd = processMessage();
+                
+                String originalMessage = "";                
+                for (int i = 1; i < cmd.size(); i++) {
+                    originalMessage += cmd.get(i) + ",";
+                }
                 switch (cmd.get(0)) {
                     case "all":
-                        if (!manager.toAll(cmd.get(1))) {
+                        if (!manager.toAll(originalMessage)) {
                             out.writeBytes("n\n");
                         } else {
                             out.writeBytes("y\n");
@@ -46,9 +51,10 @@ public class ServerHandler {
                     default:
                         // controllo del username
                         String nickname = cmd.get(0);
-                        String messsage = cmd.get(1);
+                        String message = originalMessage;
 
-                        if (!manager.to(nickname, messsage)) {
+
+                        if (!manager.to(nickname, message)) {
                             out.writeBytes("n\n");
                         } else {
                             out.writeBytes("y\n");
@@ -62,15 +68,29 @@ public class ServerHandler {
         }
     }
 
-    private void getNickname() throws IOException {
+    private void getNickname(HashMap<String, Socket> list) throws IOException {
+        out.writeBytes("name\n");
         ArrayList<String> cmd = processMessage();
-        if(cmd.get(0).equals("nickname")){
-            nickname = cmd.get(1);
-            out.writeBytes("y\n");
-        } else {
+       
+        // controllo se il nickname e' uguale a 'all'
+        if (cmd.get(1).equals("all")) {
             out.writeBytes("n\n");
-            getNickname();
-        }
+            getNickname(list);
+            return;
+        }        
+
+        // controllo se esiste di gia' il nickname
+        for (String nn : list.keySet()) {
+            if (nn.equals(cmd.get(1))) {
+                out.writeBytes("n\n");
+                getNickname(list);
+                return;
+            }
+        }  
+
+        this.nickname = cmd.get(1);
+        out.writeBytes("y\n");
+
     }
 
     // format messsage: all/<username>/nickname/quit,messaggio
@@ -80,7 +100,10 @@ public class ServerHandler {
         ArrayList<String> cmd = new ArrayList<>();
 
         for (int i = 0; i < rawList.length; ++i) {
-            String temp = rawList[i].trim();
+            String temp = rawList[i];
+            if (i == 0) {
+                temp = temp.trim();
+            }
             cmd.add(temp);
         }
 

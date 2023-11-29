@@ -1,6 +1,7 @@
 package com.example;
 
 import java.net.Socket;
+import java.util.HashMap;
 import java.net.ServerSocket;
 
 /**
@@ -13,10 +14,12 @@ public class App
     {
 
         try {
-            ServerSocket server = new ServerSocket(7574);
+            ServerSocket server = new ServerSocket(42069);
+            HashMap<String, Socket> list = new HashMap<>();
             do{
                 Socket s = server.accept(); 
-                // TODO: TUTTO
+                ServerHandler sh = new ServerHandler(s, list);
+                sh.start();
             }
             while(true);
    
