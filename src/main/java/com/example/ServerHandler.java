@@ -30,16 +30,20 @@ public class ServerHandler extends Thread {
             getNickname(list);
             list.put(nickname, connection);
             manager = new ClientManager(list, nickname);
+
             while (true) {
+                // posizione 0 commando, posizione 1 messaggio 
                 ArrayList<String> cmd = processMessage();
                 if (cmd.size() == 0) {
                     // il client ha chiuso la connessione
                     return;
                 }
 
+                // prender il messaggio effettivo
                 String originalMessage = cmd.get(1);
 
                 switch (cmd.get(0)) {
+                        // inoltre il messaggio a tutti
                     case "all":
                         if (!manager.toAll(originalMessage)) {
                             out.writeBytes("n\n");
@@ -48,13 +52,14 @@ public class ServerHandler extends Thread {
                         }
                         break;
                     case "quit":
+                        // chiude la connessione
                         manager.endConnection();
                         break;
                     default:
-                        // controllo del username
                         String nickname = cmd.get(0);
                         String message = originalMessage;
 
+                        // manda il messaggio al destinatario specificato con il messaggio
                         if (!manager.to(nickname, message)) {
                             out.writeBytes("n\n");
                         } else {
@@ -70,8 +75,12 @@ public class ServerHandler extends Thread {
     }
 
     private void getNickname(HashMap<String, Socket> list) throws IOException {
+        // chiede l'inserimento del nickname
         out.writeBytes("name\n");
+
         ArrayList<String> cmd = processMessage();
+        
+        // se la lista e' vuota, l'utente ha chiuso la connessione
         if (cmd.size() == 0) {
             return;
         }
@@ -79,22 +88,24 @@ public class ServerHandler extends Thread {
         // controllo se il nickname e' uguale a 'all'
         if (cmd.get(1).equals("all")) {
             out.writeBytes("n\n");
+            out.writeBytes("name\n");
             getNickname(list);
             return;
         }
 
         // controllo se esiste di gia' il nickname
         if (list.size() > 0) {
-
             for (String nn : list.keySet()) {
                 if (nn.equals(cmd.get(1))) {
                     out.writeBytes("n\n");
+                    out.writeBytes("name\n");
                     getNickname(list);
                     return;
                 }
             }
         }
 
+        // setta il nickname
         this.nickname = cmd.get(1);
         out.writeBytes("y\n");
 
@@ -104,15 +115,26 @@ public class ServerHandler extends Thread {
     private ArrayList<String> processMessage() throws IOException {
         String rawMessage = in.readLine();
 
+        // se e' null l'utente ha chiuso la connessione
         if (rawMessage == null) {
             return new ArrayList<>();
         }
 
-        String[] rawList = rawMessage.split(",");
         ArrayList<String> cmd = new ArrayList<>();
 
+        // trova la prima virgola per separare la parte dei commandi e la parte del messaggio
         int firstCommaIndex = rawMessage.indexOf(",");
+        // l'utente ha mandato quit
+        if (firstCommaIndex == -1) {
+            cmd.add("quit");
+            // filler...
+            cmd.add("filler");
+            return cmd;
+        }
+        
+        // aggiunge alla lista il commando
         cmd.add(rawMessage.substring(0, firstCommaIndex));
+        // aggiunge alla lista il messaggio
         cmd.add(rawMessage.substring(firstCommaIndex + 1));
         System.out.println(cmd);
 

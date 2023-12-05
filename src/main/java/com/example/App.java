@@ -15,10 +15,12 @@ public class App
 
         try {
             ServerSocket server = new ServerSocket(42069);
+            System.out.println("Server listening at 42069...");
+            // chiave nickname valore connessione
             HashMap<String, Socket> list = new HashMap<>();
             do{
                 Socket s = server.accept(); 
-                System.out.println("New connection happneded");
+                System.out.println("New connection happened");
                 ServerHandler sh = new ServerHandler(s, list);
                 sh.start();
             }
