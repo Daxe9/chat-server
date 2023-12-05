@@ -11,32 +11,34 @@ import java.util.HashMap;
 public class ServerHandler extends Thread {
 
     Socket connection;
-    String nickname; 
+    String nickname;
     BufferedReader in;
     DataOutputStream out;
     ClientManager manager;
-    
+    HashMap<String, Socket> list;
 
-    public ServerHandler(Socket connection, HashMap<String, Socket> list) throws IOException{
+    public ServerHandler(Socket connection, HashMap<String, Socket> list) throws IOException {
         this.connection = connection;
         in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         out = new DataOutputStream(connection.getOutputStream());
-        // get nickname
-        getNickname(list);        
-        list.put(nickname, connection);
-        manager = new ClientManager(list, nickname);
+        this.list = list;
     }
 
     public void run() {
-
         try {
-            while(true) {
+            // get nickname
+            getNickname(list);
+            list.put(nickname, connection);
+            manager = new ClientManager(list, nickname);
+            while (true) {
                 ArrayList<String> cmd = processMessage();
-                
-                String originalMessage = "";                
-                for (int i = 1; i < cmd.size(); i++) {
-                    originalMessage += cmd.get(i) + ",";
+                if (cmd.size() == 0) {
+                    // il client ha chiuso la connessione
+                    return;
                 }
+
+                String originalMessage = cmd.get(1);
+
                 switch (cmd.get(0)) {
                     case "all":
                         if (!manager.toAll(originalMessage)) {
@@ -46,13 +48,12 @@ public class ServerHandler extends Thread {
                         }
                         break;
                     case "quit":
-                        manager.endConnection(); 
+                        manager.endConnection();
                         break;
                     default:
                         // controllo del username
                         String nickname = cmd.get(0);
                         String message = originalMessage;
-
 
                         if (!manager.to(nickname, message)) {
                             out.writeBytes("n\n");
@@ -71,22 +72,28 @@ public class ServerHandler extends Thread {
     private void getNickname(HashMap<String, Socket> list) throws IOException {
         out.writeBytes("name\n");
         ArrayList<String> cmd = processMessage();
-       
+        if (cmd.size() == 0) {
+            return;
+        }
+
         // controllo se il nickname e' uguale a 'all'
         if (cmd.get(1).equals("all")) {
             out.writeBytes("n\n");
             getNickname(list);
             return;
-        }        
+        }
 
         // controllo se esiste di gia' il nickname
-        for (String nn : list.keySet()) {
-            if (nn.equals(cmd.get(1))) {
-                out.writeBytes("n\n");
-                getNickname(list);
-                return;
+        if (list.size() > 0) {
+
+            for (String nn : list.keySet()) {
+                if (nn.equals(cmd.get(1))) {
+                    out.writeBytes("n\n");
+                    getNickname(list);
+                    return;
+                }
             }
-        }  
+        }
 
         this.nickname = cmd.get(1);
         out.writeBytes("y\n");
@@ -96,19 +103,19 @@ public class ServerHandler extends Thread {
     // format messsage: all/<username>/nickname/quit,messaggio
     private ArrayList<String> processMessage() throws IOException {
         String rawMessage = in.readLine();
+
+        if (rawMessage == null) {
+            return new ArrayList<>();
+        }
+
         String[] rawList = rawMessage.split(",");
         ArrayList<String> cmd = new ArrayList<>();
 
-        for (int i = 0; i < rawList.length; ++i) {
-            String temp = rawList[i];
-            if (i == 0) {
-                temp = temp.trim();
-            }
-            cmd.add(temp);
-        }
+        int firstCommaIndex = rawMessage.indexOf(",");
+        cmd.add(rawMessage.substring(0, firstCommaIndex));
+        cmd.add(rawMessage.substring(firstCommaIndex + 1));
+        System.out.println(cmd);
 
         return cmd;
     }
 }
-
-

@@ -18,6 +18,7 @@ public class App
             HashMap<String, Socket> list = new HashMap<>();
             do{
                 Socket s = server.accept(); 
+                System.out.println("New connection happneded");
                 ServerHandler sh = new ServerHandler(s, list);
                 sh.start();
             }
