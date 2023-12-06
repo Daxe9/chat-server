@@ -30,6 +30,7 @@ public class ServerHandler extends Thread {
             getNickname(list);
             list.put(nickname, connection);
             manager = new ClientManager(list, nickname);
+            manager.notifyAllClients();            
 
             while (true) {
                 // posizione 0 commando, posizione 1 messaggio 

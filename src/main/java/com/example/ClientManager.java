@@ -14,13 +14,30 @@ public class ClientManager {
         this.nickname = nickname;
     }
 
+    public void notifyAllClients() {
+        try {
+            // itera tutti i client presenti e manda il messaggio 
+            for (Map.Entry<String, Socket> entry : all.entrySet()) {
+                if (!entry.getKey().equals(this.nickname)) {
+                    DataOutputStream out = new DataOutputStream(entry.getValue().getOutputStream());
+                    // <username>,message
+                    out.writeBytes("server,e' entrato " + this.nickname + "...\n");
+                }
+            }
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     public boolean toAll(String message) {
         try {
             // itera tutti i client presenti e manda il messaggio 
             for (Map.Entry<String, Socket> entry : all.entrySet()) {
-                DataOutputStream out = new DataOutputStream(entry.getValue().getOutputStream());
-                // <username>,message
-                out.writeBytes(this.nickname + "," + message + "\n");
+                if (!entry.getKey().equals(this.nickname)) {
+                    DataOutputStream out = new DataOutputStream(entry.getValue().getOutputStream());
+                    // <username>,message
+                    out.writeBytes(this.nickname + "," + message + "\n");
+                }
             }
             return true;
         } catch (Exception e) {
